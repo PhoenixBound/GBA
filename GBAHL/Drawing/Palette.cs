@@ -29,9 +29,15 @@ namespace GBAHL.Drawing
     /// <summary>
     /// Represents a collection of colors.
     /// </summary>
-    public class Palette : IEnumerable<Color>
+    public class Palette : IEnumerable<GbaColor>
     {
-        private Color[] colors;
+        private GbaColor[] colors;
+
+        public bool IsValidGbaColor(GbaColor g)
+        {
+            return ((g.Gba555Color & 0x8000) == 0);
+        }
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Palette"/> class with the specified length.
@@ -39,12 +45,12 @@ namespace GBAHL.Drawing
         /// <param name="color">The color to repeat.</param>
         /// <param name="length">The number of colors.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is less than zero.</exception>
-        public Palette(Color color, int length)
+        public Palette(GbaColor color, int length)
         {
             if (length < 0)
                 throw new ArgumentOutOfRangeException("length");
 
-            colors = new Color[length];
+            colors = new GbaColor[length];
             for (int i = 0; i < length; i++)
                 colors[i] = color;
         }
@@ -55,7 +61,7 @@ namespace GBAHL.Drawing
         /// </summary>
         /// <param name="color">The color to repeat.</param>
         /// <param name="bitDepth">The bit depth.</param>
-        public Palette(Color color, BitDepth bitDepth)
+        public Palette(GbaColor color, BitDepth bitDepth)
             : this(color, (int)bitDepth)
         { }
 
@@ -64,7 +70,7 @@ namespace GBAHL.Drawing
         /// </summary>
         /// <param name="colors">An array of color values.</param>
         /// <exception cref="ArgumentNullException"><paramref name="colors"/> is null.</exception>
-        public Palette(Color[] colors)
+        public Palette(GbaColor[] colors)
         {
             this.colors = colors ?? throw new ArgumentNullException("colors");
         }
@@ -109,9 +115,9 @@ namespace GBAHL.Drawing
 
                         var length = br.ReadInt32();
 
-                        colors = new Color[length];
+                        colors = new GbaColor[length];
                         for (int i = 0; i < length; i++)
-                            colors[i] = Color.FromArgb(br.ReadInt32());                        
+                            colors[i].RgbColor = Color.FromArgb(br.ReadInt32());                        
                     }
                     break;
 
@@ -127,7 +133,7 @@ namespace GBAHL.Drawing
                         if (!int.TryParse(sr.ReadLine(), out length))
                             throw new InvalidDataException("Invalid palette length.");
 
-                        colors = new Color[length];
+                        colors = new GbaColor[length];
                         for (int i = 0; i < length; i++)
                         {
                             try
@@ -138,7 +144,7 @@ namespace GBAHL.Drawing
                                 var g = byte.Parse(color[1]);
                                 var b = byte.Parse(color[2]);
 
-                                colors[i] = Color.FromArgb(r, g, b);
+                                colors[i].RgbColor = Color.FromArgb(r, g, b);
                             }
                             catch (Exception ex)
                             {
@@ -154,14 +160,14 @@ namespace GBAHL.Drawing
                         // NOTE: it is difficult to verify the format of an ACT palette
                         try
                         {
-                            colors = new Color[256];
+                            colors = new GbaColor[256];
                             for (int i = 0; i < 256; i++)
                             {
                                 var r = br.ReadByte();
                                 var g = br.ReadByte();
                                 var b = br.ReadByte();
 
-                                colors[i] = Color.FromArgb(r, g, b);
+                                colors[i].RgbColor = Color.FromArgb(r, g, b);
                             }
                         }
                         catch (Exception ex)
@@ -187,15 +193,15 @@ namespace GBAHL.Drawing
             switch (image.PixelFormat)
             {
                 case PixelFormat.Format1bppIndexed:
-                    colors = new Color[1 << 1];
+                    colors = new GbaColor[1 << 1];
                     break;
 
                 case PixelFormat.Format4bppIndexed:
-                    colors = new Color[1 << 4];
+                    colors = new GbaColor[1 << 4];
                     break;
 
                 case PixelFormat.Format8bppIndexed:
-                    colors = new Color[1 << 8];
+                    colors = new GbaColor[1 << 8];
                     break;
 
                 default:
@@ -211,7 +217,7 @@ namespace GBAHL.Drawing
         /// </summary>
         /// <param name="index">The color's index.</param>
         /// <returns>A color.</returns>
-        public Color this[int index]
+        public GbaColor this[int index]
         {
             get => colors[index];
             set => colors[index] = value;
@@ -249,7 +255,7 @@ namespace GBAHL.Drawing
 
                         bw.Write(colors.Length);
                         foreach (var color in colors)
-                            bw.Write(color.ToArgb());
+                            bw.Write(color.RgbColor.ToArgb());
                     }
                     break;
 
@@ -261,7 +267,7 @@ namespace GBAHL.Drawing
                         sw.WriteLine(colors.Length);
 
                         for (int i = 0; i < colors.Length; i++)
-                            sw.WriteLine("{0} {1} {2}", colors[i].R, colors[i].G, colors[i].B);
+                            sw.WriteLine("{0} {1} {2}", colors[i].RgbColor.R, colors[i].RgbColor.G, colors[i].RgbColor.B);
                     }
                     break;
 
@@ -274,9 +280,9 @@ namespace GBAHL.Drawing
                     {
                         foreach (var color in colors)
                         {
-                            bw.Write(color.R);
-                            bw.Write(color.G);
-                            bw.Write(color.B);
+                            bw.Write(color.RgbColor.R);
+                            bw.Write(color.RgbColor.G);
+                            bw.Write(color.RgbColor.B);
                         }
                     }
                     break;
@@ -290,8 +296,8 @@ namespace GBAHL.Drawing
         /// Returns an iterator that iterates through the <see cref="Palette"/>.
         /// </summary>
         /// <returns>A interator.</returns>
-        public IEnumerator<Color> GetEnumerator() =>
-             ((IEnumerable<Color>)colors).GetEnumerator();
+        public IEnumerator<GbaColor> GetEnumerator() =>
+             ((IEnumerable<GbaColor>)colors).GetEnumerator();
 
         /// <summary>
         /// Returns an iterator that iterates through the <see cref="Palette"/>.

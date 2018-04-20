@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Drawing\Extensions.cs" />
+    <Compile Include="Drawing\GbaColor.cs" />
     <Compile Include="Drawing\Palette.cs" />
     <Compile Include="Drawing\Sprite.cs" />
     <Compile Include="Drawing\Tile.cs" />

@@ -1,4 +1,5 @@
-﻿#if INCLUDE_OLD_ROM
+﻿#define INCLUDE_OLD_ROM
+#if INCLUDE_OLD_ROM
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -33,16 +34,7 @@ namespace GBAHL.IO
         /// <exception cref="FileNotFoundException">unable to open specified file.</exception>
         /// <exception cref="ArgumentException">file is larger than 0x1FFFFFF bytes.</exception>
         public ROM_old(string filePath, FileAccess access, FileShare share) : base(filePath, access, share)
-        {
-#if ENFORCE_ROM_SIZE
-            // TODO: Factor of two or something
-            if (Length % 0x1000000 != 0)
-            {
-                Dispose();
-                throw new Exception("File is not the correct size for a ROM!");
-            }
-#endif
-        }
+        { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ROM_old"/> class based on the specified <see cref="Stream"/>.
@@ -50,14 +42,7 @@ namespace GBAHL.IO
         /// <param name="stream">The stream.</param>
         /// <exception cref="ArgumentException">stream is longer than 0x1FFFFFF bytes.</exception>
         public ROM_old(Stream stream) : base(stream)
-        {
-#if ENFORCE_ROM_SIZE
-            if (Length % 0x1000000 != 0)
-            {
-                throw new Exception("Stream is not the correct size for a ROM!");
-            }
-#endif
-        }
+        { }
 
         #region Read
 
@@ -97,61 +82,60 @@ namespace GBAHL.IO
             return -1;
         }
 
-        /// <summary>
-        /// Reads an FF-terminated string using the given <see cref="Encoding"/> and advances the position.
-        /// </summary>
-        /// <param name="encoding">The encoding of the string.</param>
-        /// <returns></returns>
-        public string ReadText(Table.Encoding encoding)
-        {
-            // read string until FF
-            List<byte> buffer = new List<byte>();
-            byte temp = 0;
-            do
-            {
-                buffer.Add((temp = ReadByte()));
-            } while (temp != 0xFF);
+        ///// <summary>
+        ///// Reads an FF-terminated string using the given <see cref="Encoding"/> and advances the position.
+        ///// </summary>
+        ///// <param name="encoding">The encoding of the string.</param>
+        ///// <returns></returns>
+        //public string ReadText(TableEncoding encoding)
+        //{
+        //    // read string until FF
+        //    List<byte> buffer = new List<byte>();
+        //    byte temp = 0;
+        //    do
+        //    {
+        //        buffer.Add((temp = ReadByte()));
+        //    } while (temp != 0xFF);
 
-            // convert to string
-            return Table.GetString(buffer.ToArray(), encoding);
-        }
+        //    // convert to string
+        //    return Table.GetString(buffer.ToArray(), encoding);
+        //}
 
-        /// <summary>
-        /// Reads a string of the given length using the given <see cref="Table.Encoding"/> and advances the position by that many bytes.
-        /// </summary>
-        /// <param name="length">The length of the string.</param>
-        /// <param name="encoding">The encoding of the string.</param>
-        /// <returns></returns>
-        public string ReadText(int length, Table.Encoding encoding)
-        {
-            return Table.GetString(ReadBytes(length), encoding);
-        }
+        ///// <summary>
+        ///// Reads a string of the given length using the given <see cref="Table.Encoding"/> and advances the position by that many bytes.
+        ///// </summary>
+        ///// <param name="length">The length of the string.</param>
+        ///// <param name="encoding">The encoding of the string.</param>
+        ///// <returns></returns>
+        //public string ReadText(int length, Table.Encoding encoding)
+        //{
+        //    return Table.GetString(ReadBytes(length), encoding);
+        //}
 
-        /// <summary>
-        /// Reads a table of strings of the given length using the given <see cref="Table.Encoding"/> and advances the position by that many bytes.
-        /// </summary>
-        /// <param name="stringLength">The length of the string.</param>
-        /// <param name="tableSize">The length of the table.</param>
-        /// <param name="encoding">The encoding of the string.</param>
-        /// <returns></returns>
-        public string[] ReadTextTable(int stringLength, int tableSize, Table.Encoding encoding)
-        {
-            var table = new string[tableSize];
-            for (int i = 0; i < tableSize; i++)
-            {
-                table[i] = ReadText(stringLength, encoding);
-            }
-            return table;
-        }
+        ///// <summary>
+        ///// Reads a table of strings of the given length using the given <see cref="Table.Encoding"/> and advances the position by that many bytes.
+        ///// </summary>
+        ///// <param name="stringLength">The length of the string.</param>
+        ///// <param name="tableSize">The length of the table.</param>
+        ///// <param name="encoding">The encoding of the string.</param>
+        ///// <returns></returns>
+        //public string[] ReadTextTable(int stringLength, int tableSize, Table.Encoding encoding)
+        //{
+        //    var table = new string[tableSize];
+        //    for (int i = 0; i < tableSize; i++)
+        //    {
+        //        table[i] = ReadText(stringLength, encoding);
+        //    }
+        //    return table;
+        //}
 
         /// <summary>
         /// Reads a 2-byte BGR555 color from the stream and advances the position by two bytes.
         /// </summary>
         /// <returns>A <see cref="Color"/> read from the stream.</returns>
-        public Color ReadColor()
+        public ushort ReadColor()
         {
-            var c = ReadUInt16();
-            return Color.FromArgb((c & 0x1F) << 3, (c >> 5 & 0x1F) << 3, (c >> 10 & 0x1F) << 3);
+            return ReadUInt16();
         }
 
         /// <summary>
@@ -162,9 +146,9 @@ namespace GBAHL.IO
         /// <exception cref="ArgumentOutOfRangeException">colors was not 16 or 256.</exception>
         public Palette ReadPalette(int colors = 16)
         {
-            var pal = new Palette(colors);
+            var pal = new Palette(new GbaColor(), colors);
             for (int i = 0; i < colors; i++)
-                pal[i] = ReadColor();
+                pal[i] = new GbaColor(ReadColor());
             return pal;
         }
 
@@ -176,11 +160,11 @@ namespace GBAHL.IO
         public Palette ReadCompressedPalette()
         {
             var buffer = ReadCompressedBytes();
-            var pal = new Palette(buffer.Length / 2);
+            var pal = new Palette(new GbaColor(), buffer.Length / 2);
             for (int i = 0; i < pal.Length; i++)
             {
                 var color = (buffer[i * 2 + 1] << 8) | buffer[i * 2];
-                pal[i] = Color.FromArgb((color & 0x1F) << 3, (color >> 5 & 0x1F) << 3, (color >> 10 & 0x1F) << 3);
+                pal[i].RgbColor = Color.FromArgb((color & 0x1F) << 3, (color >> 5 & 0x1F) << 3, (color >> 10 & 0x1F) << 3);
             }
             return pal;
         }
@@ -278,29 +262,29 @@ namespace GBAHL.IO
                 WriteUInt32((uint)offset + 0x08000000u);
         }
 
-        public void WriteText(string str, Table.Encoding encoding)
-        {
-            WriteBytes(Table.GetBytes(str, encoding));
-        }
+        //public void WriteText(string str, Table.Encoding encoding)
+        //{
+        //    WriteBytes(Table.GetBytes(str, encoding));
+        //}
 
-        public void WriteText(string str, int length, Table.Encoding encoding)
-        {
-            // convert string
-            byte[] buffer = Table.GetBytes(str, encoding);
+        //public void WriteText(string str, int length, Table.Encoding encoding)
+        //{
+        //    // convert string
+        //    byte[] buffer = Table.GetBytes(str, encoding);
 
-            // ensure proper length
-            if (buffer.Length != length)
-                Array.Resize(ref buffer, length);
-            buffer[length - 1] = 0xFF;
+        //    // ensure proper length
+        //    if (buffer.Length != length)
+        //        Array.Resize(ref buffer, length);
+        //    buffer[length - 1] = 0xFF;
 
-            WriteBytes(buffer);
-        }
+        //    WriteBytes(buffer);
+        //}
 
-        public void WriteTextTable(string[] table, int entryLength, Table.Encoding encoding)
-        {
-            foreach (var str in table)
-                WriteText(str, entryLength, encoding);
-        }
+        //public void WriteTextTable(string[] table, int entryLength, Table.Encoding encoding)
+        //{
+        //    foreach (var str in table)
+        //        WriteText(str, entryLength, encoding);
+        //}
 
         public void WriteColor(Color color)
         {
@@ -309,8 +293,8 @@ namespace GBAHL.IO
 
         public void WritePalette(Palette palette)
         {
-            foreach (Color color in palette)
-                WriteUInt16((ushort)((color.R / 8) | (color.G / 8 << 5) | (color.B / 3 << 10)));
+            foreach (GbaColor color in palette)
+                WriteUInt16((ushort)((color.RgbColor.R / 8) | (color.RgbColor.G / 8 << 5) | (color.RgbColor.B / 3 << 10)));
         }
 
         public void WriteCompressedPalette(Palette palette)
@@ -321,8 +305,8 @@ namespace GBAHL.IO
             // copy colors to buffer
             for (int i = 0; i < palette.Length; i++)
             {
-                Color color = palette[i];
-                ushort u = (ushort)((color.R / 8) | (color.G / 8 << 5) | (color.B / 3 << 10));
+                GbaColor color = palette[i];
+                ushort u = (ushort)((color.RgbColor.R / 8) | (color.RgbColor.G / 8 << 5) | (color.RgbColor.B / 3 << 10));
 
                 buffer[i * 2] = (byte)u;
                 buffer[i * 2 + 1] = (byte)(u >> 8);
@@ -424,10 +408,20 @@ namespace GBAHL.IO
                 if (name != null)
                     return name;
 
-                var i = Position;
-                Position = 0xA0;
-                name = ReadString(12);
-                Position = i;
+                if (Length > 0xB1)
+                {
+                    var i = Position;
+                    Position = 0xA0;
+                    name = ReadString(12);
+                    Position = i;
+                }
+                else
+                {
+                    // Not exactly a ROM anymore, but whatever.
+                    name = "Binary Blob";
+                    code = "XXXX";
+                    maker = "XX";
+                }
 
                 return name;
             }
@@ -443,10 +437,20 @@ namespace GBAHL.IO
                 if (code != null)
                     return code;
 
-                var i = Position;
-                Position = 0xAC;
-                code = ReadString(4);
-                Position = i;
+                if (Length > 0xB1)
+                {
+                    var i = Position;
+                    Position = 0xAC;
+                    code = ReadString(4);
+                    Position = i;
+                }
+                else
+                {
+                    // Not exactly a ROM anymore, but whatever.
+                    name = "Binary Blob";
+                    code = "XXXX";
+                    maker = "XX";
+                }
 
                 return code;
             }
@@ -462,10 +466,20 @@ namespace GBAHL.IO
                 if (maker != null)
                     return maker;
 
-                var i = Position;
-                Position = 0xB0;
-                maker = ReadString(2);
-                Position = i;
+                if (Length > 0xB1)
+                {
+                    var i = Position;
+                    Position = 0xB0;
+                    maker = ReadString(2);
+                    Position = i;
+                }
+                else
+                {
+                    // Not exactly a ROM anymore, but whatever.
+                    name = "Binary Blob";
+                    code = "XXXX";
+                    maker = "XX";
+                }
 
                 return maker;
             }

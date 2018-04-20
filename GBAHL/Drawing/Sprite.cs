@@ -309,7 +309,7 @@ namespace GBAHL.Drawing
                     {
                         for (int x = 0; x < Tile.Height; x++)
                         {
-                            bmp.SetPixel(x + tX * Tile.Width, y + tY * Tile.Height, palette[tile.GetPixel(x, y)]);
+                            bmp.SetPixel(x + tX * Tile.Width, y + tY * Tile.Height, palette[tile.GetPixel(x, y)].RgbColor);
                         }
                     }
                 }
@@ -317,7 +317,7 @@ namespace GBAHL.Drawing
 
             // Apply color 0 transparency
             if (!showColor0) {
-                bmp.MakeTransparent(palette[0]);
+                bmp.MakeTransparent(palette[0].RgbColor);
             }
 
             return bmp;
@@ -404,7 +404,7 @@ namespace GBAHL.Drawing
                     // color table
                     for (int i = 0; i < 16; i++)
                     {
-                        var color = (i < palette.Length ? palette[i] : Color.Black);
+                        var color = (i < palette.Length ? palette[i].RgbColor : Color.Black);
 
                         bw.Write(color.B);
                         bw.Write(color.G);
@@ -461,7 +461,7 @@ namespace GBAHL.Drawing
                     // color table
                     for (int i = 0; i < 256; i++)
                     {
-                        var color = (i < palette.Length ? palette[i] : Color.Black);
+                        var color = (i < palette.Length ? palette[i].RgbColor : Color.Black);
 
                         bw.Write(color.B);
                         bw.Write(color.G);

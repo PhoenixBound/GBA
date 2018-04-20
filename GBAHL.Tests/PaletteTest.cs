@@ -15,9 +15,9 @@ namespace GBAHL.Tests
         {
             var step = 256 / length;
 
-            var pltt = new Palette(Color.Black, length);
+            var pltt = new Palette(new GbaColor(), length);
             for (int i = 0; i < length; i++)
-                pltt[i] = Color.FromArgb(i * step, i * step, i * step);
+                pltt[i].RgbColor = Color.FromArgb(i * step, i * step, i * step);
 
             return pltt;
         }
