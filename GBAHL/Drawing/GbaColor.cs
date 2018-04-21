@@ -61,9 +61,10 @@ namespace GBAHL.Drawing
 
         public Color ToRgbColor()
         {
-            byte red = (byte)Math.Round((shortColor & 0x1F) * 255.0 / 31.0, 0);
-            var green = (byte)Math.Round(((shortColor >> 5) & 0x1F) * 255.0 / 31.0, 0);
-            var blue = (byte)Math.Round(((shortColor >> 10) & 0x1F) * 255.0 / 31.0, 0);
+            // TODO: Figure out what arcane magic mGBA uses. It's slightly off compared to this.
+            var red = (shortColor & 0x1F) * 255 / 31;
+            var green = ((shortColor >> 5) & 0x1F) * 255 / 31;
+            var blue = ((shortColor >> 10) & 0x1F) * 255 / 31;
             return Color.FromArgb(red, green, blue);
         }
     }
