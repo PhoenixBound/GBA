@@ -294,7 +294,7 @@ namespace GBAHL.IO
         public void WritePalette(Palette palette)
         {
             foreach (GbaColor color in palette)
-                WriteUInt16((ushort)((color.RgbColor.R / 8) | (color.RgbColor.G / 8 << 5) | (color.RgbColor.B / 3 << 10)));
+                WriteUInt16(color.Gba555Color);
         }
 
         public void WriteCompressedPalette(Palette palette)
